@@ -1,0 +1,17 @@
+{
+  "name": "tenderseal-local",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=22.13"},
+  "packageManager": "pnpm@11.25.0",
+  "scripts": {
+    "demo": "hardhat compile && node scripts/demo.js",
+    "test": "hardhat compile && node --test test/tender.test.js"
+  },
+  "devDependencies": {
+    "hardhat": "3.22.0",
+    "solc": "0.8.28",
+    "viem": "2.54.0"
+  }
+}
