@@ -14,7 +14,7 @@ const assets = {
 };
 const emptyDigest = '0x' + '0'.repeat(64);
 const ruleDigest = keccak256(toHex('Lowest eligible integer KZT bid wins; ties use earliest accepted commitment.'));
-const local = await deploy();
+const local = await deploy({ manualTime: true });
 const suppliers = [local.supplierA, local.supplierB];
 let tender;
 let revision = 0;
@@ -33,9 +33,9 @@ function readPrice(value) {
   return BigInt(value);
 }
 
-async function readBids(id = tender.id) {
+async function readBids() {
   return Promise.all(suppliers.map(async supplier => {
-    const [sealed, receipt, sequence, delivery] = await local.read('bids', [id, supplier]);
+    const [sealed, receipt, sequence, delivery] = await local.read('bids', [tender.id, supplier]);
     return { supplier, commitment: sealed, receipt, sequence, delivery };
   }));
 }

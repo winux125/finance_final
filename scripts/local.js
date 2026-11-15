@@ -9,7 +9,7 @@ const chain = defineChain({
   rpcUrls: { default: { http: ['http://127.0.0.1:8545'] } },
 });
 
-export async function deploy() {
+export async function deploy({ manualTime = false } = {}) {
   // A fresh in-process EVM for every deploy. No external RPC URL or funded wallet.
   const connection = await network.create('sandbox');
   try {
@@ -28,15 +28,21 @@ export async function deploy() {
       throw new Error('Local deployment failed');
     }
     const contract = { abi, address: receipt.contractAddress };
+    const timestamp = async () => (await reader.getBlock()).timestamp;
+    const setNextTimestamp = async next => {
+      await connection.provider.request({ method: 'evm_setNextBlockTimestamp', params: [Number(next)] });
+    };
     return {
       address: receipt.contractAddress,
       buyer, evaluator, auditor, supplierA, supplierB, stranger, intake,
-      async timestamp() { return (await reader.getBlock()).timestamp; },
-      async advance(timestamp) {
-        await connection.provider.request({ method: 'evm_setNextBlockTimestamp', params: [Number(timestamp)] });
+      timestamp,
+      async advance(next) {
+        await setNextTimestamp(next);
         await connection.provider.request({ method: 'evm_mine' });
       },
       async write(account, functionName, args) {
+        // The browser demo advances by user action, even after a long pause.
+        if (manualTime) await setNextTimestamp(await timestamp() + 1n);
         const hash = await client.writeContract({ ...contract, account, functionName, args });
         const result = await reader.getTransactionReceipt({ hash });
         if (result.status !== 'success') throw new Error('Local transaction reverted');
