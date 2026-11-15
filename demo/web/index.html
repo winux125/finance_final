@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TenderSeal | Award review</title>
+  <link rel="stylesheet" href="/demo.css">
+  <script src="/demo.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="top-inner">
+      <strong>TenderSeal</strong>
+      <span>Local Hardhat demo</span>
+    </div>
+  </header>
+  <main class="shell">
+    <div class="heading">
+      <div>
+        <h1>Award review</h1>
+        <p>Maintenance tender <span class="separator">/</span> Lowest eligible bid wins</p>
+      </div>
+      <button class="secondary" type="button" data-action="reset" id="reset" disabled>New tender</button>
+    </div>
+
+    <ol class="steps" aria-label="Tender steps">
+      <li id="step-entry" aria-current="step"><span>1</span> Seal bids</li>
+      <li id="step-sealed"><span>2</span> Evaluate</li>
+      <li id="step-review"><span>3</span> Review award</li>
+    </ol>
+
+    <section class="desk" aria-labelledby="status-title">
+      <div class="desk-heading">
+        <h2 id="status-title" tabindex="-1">Connecting to TenderLedger</h2>
+        <p id="status-detail">Waiting for the local contract.</p>
+      </div>
+      <p id="feedback" class="feedback" role="status" hidden></p>
+
+      <form id="bids-form" hidden>
+        <div class="fields">
+          <div>
+            <label for="price-a">Supplier A</label>
+            <div class="entry"><input id="price-a" name="priceA" inputmode="numeric" pattern="[1-9][0-9]{0,14}" maxlength="15" value="1250000" required aria-describedby="whole-kzt"><span>KZT</span></div>
+          </div>
+          <div>
+            <label for="price-b">Supplier B</label>
+            <div class="entry"><input id="price-b" name="priceB" inputmode="numeric" pattern="[1-9][0-9]{0,14}" maxlength="15" value="1100000" required aria-describedby="whole-kzt"><span>KZT</span></div>
+          </div>
+        </div>
+        <p id="whole-kzt" class="hint">Enter whole amounts without commas.</p>
+        <button type="submit">Seal bids</button>
+      </form>
+
+      <form id="evaluation-form" hidden>
+        <label class="omit">
+          <input id="omit-b" type="checkbox">
+          <span><strong>Leave Supplier B out of the evaluation</strong><small>Intake will still confirm both bids. Use this to show how compliance detects an omission.</small></span>
+        </label>
+        <button type="submit">Open bids and propose award</button>
+      </form>
+
+      <div id="records" hidden>
+        <table>
+          <caption class="sr-only">Intake and evaluation records by supplier</caption>
+          <thead><tr><th scope="col">Supplier</th><th scope="col">Bid (KZT)</th><th scope="col">Intake</th><th scope="col">Evaluation</th></tr></thead>
+          <tbody id="bid-rows"></tbody>
+        </table>
+        <p id="finding" class="finding"></p>
+        <div id="decision-buttons" class="decision">
+          <button type="button" data-action="approve">Approve award</button>
+          <button type="button" data-action="hold" class="secondary hold">Hold award</button>
+        </div>
+      </div>
+    </section>
+
+    <dl class="ledger" aria-label="Local ledger details">
+      <div><dt>Contract</dt><dd id="contract">Pending</dd></div>
+      <div><dt>Last transaction</dt><dd id="last-transaction">None yet</dd></div>
+    </dl>
+  </main>
+</body>
+</html>

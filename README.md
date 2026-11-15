@@ -19,6 +19,17 @@ python finance.py
 
 The initial install downloads locked packages including the Solidity compiler. Each demo and test deploys to an in-process Hardhat chain, chain ID 31337, with generated test accounts. The demo shows the reviewer holding a tender when the evaluator leaves out Supplier B, the lowest valid bid. A separate clean tender awards to B. There is no mainnet or testnet deployment.
 
+## Run the interactive demo
+
+Run `pnpm demo:web` after installing dependencies, then open [http://127.0.0.1:4173/](http://127.0.0.1:4173/) in a browser. Keep the terminal open while using the demo. Press Ctrl+C in the terminal to stop it.
+
+1. Enter two synthetic bid amounts and click **Seal bids**.
+2. Select **Leave Supplier B out of the evaluation** to demonstrate an omission, or leave it unchecked for a clean tender. Click **Open bids and propose award**.
+3. Compare the intake and evaluation records. In the omission case, **Approve award** explains the mismatch and **Hold award** records the hold. In a clean tender, **Approve award** finalizes the lowest eligible bid.
+4. Click **New tender** to try the other outcome. The local server deploys TenderLedger on startup and sends real transactions to that local simulation as you click. The server keeps the test prices and salts in memory.
+
+If the contract is already compiled and the dependencies are installed, `node scripts/demo-web.js` starts the web demo directly.
+
 ## Read the code
 
 - `contracts/TenderLedger.sol` holds the tender state and the role and deadline checks.
