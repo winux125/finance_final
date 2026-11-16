@@ -28,6 +28,8 @@ Run `pnpm demo:web` after installing dependencies, then open [http://127.0.0.1:4
 3. Compare the intake and evaluation records. In the omission case, **Approve award** explains the mismatch and **Hold award** records the hold. In a clean tender, **Approve award** finalizes the lowest eligible bid.
 4. Click **New tender** to try the other outcome. The local server deploys TenderLedger on startup and sends real transactions to that local simulation as you click. The server keeps the test prices and salts in memory.
 
+**Block explorer** shows a cube for each mined Hardhat block. Select a cube to see the block hash, its parent hash and any demo transaction. **Transaction history** lists the confirmed actions, including contract deployment. Both views retain earlier tenders while the local server is running.
+
 If the contract is already compiled and the dependencies are installed, `node scripts/demo-web.js` starts the web demo directly.
 
 ## Read the code

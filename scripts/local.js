@@ -34,8 +34,10 @@ export async function deploy({ manualTime = false } = {}) {
     };
     return {
       address: receipt.contractAddress,
+      deployment: { hash: receipt.transactionHash, blockNumber: receipt.blockNumber },
       buyer, evaluator, auditor, supplierA, supplierB, stranger, intake,
       timestamp,
+      block(blockNumber) { return reader.getBlock({ blockNumber }); },
       async advance(next) {
         await setNextTimestamp(next);
         await connection.provider.request({ method: 'evm_mine' });

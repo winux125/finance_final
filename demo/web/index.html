@@ -33,6 +33,7 @@
       <div class="desk-heading">
         <h2 id="status-title" tabindex="-1">Connecting to TenderLedger</h2>
         <p id="status-detail">Waiting for the local contract.</p>
+        <a id="show-block" href="#chain-title" hidden>View blocks</a>
       </div>
       <p id="feedback" class="feedback" role="status" hidden></p>
 
@@ -73,10 +74,35 @@
       </div>
     </section>
 
-    <dl class="ledger" aria-label="Local ledger details">
-      <div><dt>Contract</dt><dd id="contract">Pending</dd></div>
-      <div><dt>Last transaction</dt><dd id="last-transaction">None yet</dd></div>
-    </dl>
+    <section class="history" aria-labelledby="chain-title">
+      <div class="history-heading">
+        <h2 id="chain-title">Block explorer</h2>
+        <p>Hardhat chain 31337</p>
+      </div>
+      <dl class="ledger">
+        <dt>Contract</dt><dd id="contract">Pending</dd>
+      </dl>
+      <div id="explorer" hidden>
+        <p class="explorer-help">Select a block to see what was recorded.</p>
+        <div class="chain-scroll">
+          <ol id="blocks" class="block-chain" aria-label="Blocks in mining order"></ol>
+        </div>
+        <div class="block-detail">
+          <div><h3 id="block-heading"></h3><p id="block-action"></p></div>
+          <dl>
+            <dt>Block hash</dt><dd id="block-hash"></dd>
+            <dt>Parent hash</dt><dd id="parent-hash"></dd>
+            <dt>Transaction hash</dt><dd id="block-transaction"></dd>
+          </dl>
+        </div>
+      </div>
+      <h3 class="transactions-heading" id="history-title">Transaction history</h3>
+      <table id="history-table" class="history-table" hidden>
+        <caption class="sr-only">Confirmed transactions on the local Hardhat blockchain</caption>
+        <thead><tr><th scope="col">Block</th><th scope="col">Action</th><th scope="col">Transaction hash</th></tr></thead>
+        <tbody id="history-rows"></tbody>
+      </table>
+    </section>
   </main>
 </body>
 </html>

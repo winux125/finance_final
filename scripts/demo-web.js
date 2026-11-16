@@ -16,11 +16,36 @@ const emptyDigest = '0x' + '0'.repeat(64);
 const ruleDigest = keccak256(toHex('Lowest eligible integer KZT bid wins; ties use earliest accepted commitment.'));
 const local = await deploy({ manualTime: true });
 const suppliers = [local.supplierA, local.supplierB];
+const blocks = [];
+const history = [{
+  action: 'Contract deployed',
+  tenderNumber: null,
+  hash: local.deployment.hash,
+  block: local.deployment.blockNumber.toString(),
+}];
 let tender;
+let tenderNumber = 0;
 let revision = 0;
 let busy = false;
 
 class InputError extends Error {}
+
+async function recordBlock(blockNumber) {
+  const block = await local.block(blockNumber);
+  blocks.push({
+    number: block.number.toString(),
+    hash: block.hash,
+    parentHash: block.number === 0n ? null : block.parentHash,
+  });
+}
+
+await recordBlock(0n);
+await recordBlock(local.deployment.blockNumber);
+
+async function advance(timestamp) {
+  await local.advance(timestamp);
+  await recordBlock();
+}
 
 function requireStage(stage) {
   if (tender?.stage !== stage) throw new InputError('This action is unavailable at the current step.');
@@ -55,6 +80,8 @@ function snapshot() {
     stage,
     contract: local.address,
     transaction: current?.transaction ?? null,
+    history,
+    blocks,
     proposed: supplierName(current?.proposal?.winner),
     decision: current?.decision ?? null,
     bids: details?.map((bid, i) => ({
@@ -66,9 +93,11 @@ function snapshot() {
   };
 }
 
-async function write(account, method, args) {
+async function write(account, method, args, action) {
   const tx = await local.write(account, method, args);
   tender.transaction = tx.hash;
+  history.push({ action, hash: tx.hash, block: tx.blockNumber.toString(), tenderNumber: tender.number });
+  await recordBlock(tx.blockNumber);
 }
 
 async function seal(body) {
@@ -82,10 +111,11 @@ async function seal(body) {
   const reviewEnd = revealEnd + 600n;
   const context = { tender: id, registry: local.address, ruleDigest, chainId: 31337n };
   const openings = suppliers.map((supplier, i) => makeOpening(supplier, prices[i]));
-  tender = { id, context, openings, commitEnd, revealEnd, stage: 'error' };
-  await write(local.buyer, 'createTender', [id, ruleDigest, commitEnd, revealEnd, reviewEnd, suppliers]);
+  tender = { id, context, openings, commitEnd, revealEnd, stage: 'error', number: ++tenderNumber };
+  await write(local.buyer, 'createTender', [id, ruleDigest, commitEnd, revealEnd, reviewEnd, suppliers], 'Tender created');
   for (const opening of openings) {
-    await write(opening.supplier, 'commitBid', [id, commitment(context, opening)]);
+    await write(opening.supplier, 'commitBid', [id, commitment(context, opening)],
+      `Supplier ${supplierName(opening.supplier)} sealed a bid`);
   }
   tender.stage = 'sealed';
 }
@@ -95,24 +125,27 @@ async function propose(body) {
   if (typeof body.omitB !== 'boolean') throw new InputError('Choose which bids to include in the evaluation.');
   const { id, commitEnd, revealEnd, openings, context } = tender;
   tender.stage = 'error';
-  await local.advance(commitEnd);
+  await advance(commitEnd);
   const committed = await readBids();
   for (const [i, opening] of openings.entries()) {
     if (commitment(context, opening) !== committed[i].commitment) {
       throw new Error('Opening digest differs from the sealed bid');
     }
-    await write(local.intake, 'attestDelivery', [id, opening.supplier, receiptFor(committed[i].commitment)]);
+    await write(local.intake, 'attestDelivery', [id, opening.supplier, receiptFor(committed[i].commitment)],
+      `Intake confirmed Supplier ${supplierName(opening.supplier)}`);
   }
   const included = body.omitB ? openings.slice(0, 1) : openings;
   for (const opening of included) {
-    await write(local.evaluator, 'recordRevealReceipt', [id, opening.supplier, receiptFor(commitment(context, opening))]);
+    await write(local.evaluator, 'recordRevealReceipt', [id, opening.supplier, receiptFor(commitment(context, opening))],
+      `Evaluation included Supplier ${supplierName(opening.supplier)}`);
   }
-  await local.advance(revealEnd);
-  await write(local.buyer, 'closeTender', [id]);
+  await advance(revealEnd);
+  await write(local.buyer, 'closeTender', [id], 'Tender closed');
   tender.reviewBids = await readBids();
   tender.proposal = evaluate(context, tender.reviewBids, included);
   const { winner, resultDigest } = tender.proposal;
-  await write(local.evaluator, 'proposeResult', [id, winner, resultDigest]);
+  await write(local.evaluator, 'proposeResult', [id, winner, resultDigest],
+    `Evaluator proposed Supplier ${supplierName(winner)}`);
   tender.stage = 'review';
 }
 
@@ -126,9 +159,10 @@ async function decide(approve) {
   const verified = approve ? verifyAward(context, bids, openings) : null;
   tender.stage = 'error';
   if (verified) {
-    await write(local.auditor, 'finalizeResult', [id, verified.winner, verified.resultDigest]);
+    await write(local.auditor, 'finalizeResult', [id, verified.winner, verified.resultDigest],
+      `Awarded to Supplier ${supplierName(verified.winner)}`);
   } else {
-    await write(local.auditor, 'holdAward', [id, keccak256(toHex('Held by the demo reviewer'))]);
+    await write(local.auditor, 'holdAward', [id, keccak256(toHex('Held by the demo reviewer'))], 'Award held');
   }
   const record = await local.read('tenders', [id]);
   if (record[4] !== (approve ? 3 : 5)) throw new Error('Unexpected tender state after reviewer action');
